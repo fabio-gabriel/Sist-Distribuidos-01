@@ -15,7 +15,7 @@ class IoTDevice:
         return f"Device {self.device_id} - Data: {self.data}"
 
 
-class IoTSimulator:
+class IotGateway:
     def __init__(self, host, port):
         self.host = host
         self.port = port
@@ -52,5 +52,5 @@ class IoTSimulator:
 
 
 if __name__ == "__main__":
-    gateway = IoTSimulator("localhost", 8080)
+    gateway = IotGateway("localhost", 12345)
     gateway.start()
