@@ -1,4 +1,5 @@
 import socket
+import signal
 
 
 class IoTClient:
@@ -6,8 +7,16 @@ class IoTClient:
         self.host = host
         self.port = port
         self.client_socket = None
+        self.running = True  # Flag to control the main loop
+
+    def handle_shutdown(self, signum, frame):
+        print("Closing the client...")
+        self.running = False
+        if self.client_socket:
+            self.client_socket.close()
 
     def connect(self):
+        signal.signal(signal.SIGINT, self.handle_shutdown)
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self.client_socket.connect((self.host, self.port))
@@ -23,17 +32,15 @@ class IoTClient:
 
     def receive_data(self):
         try:
-            while True:
-                data = self.client_socket.recv(
-                    1024
-                )  # Receive data from the server (gateway)
+            while self.running:
+                data = self.client_socket.recv(1024)
                 if not data:
                     break
                 print(f"Received data: {data.decode()}")
+
+            self.client_socket.close()
         except Exception as e:
             print(f"Error: {e}")
-        finally:
-            self.client_socket.close()
 
 
 if __name__ == "__main__":
@@ -51,4 +58,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         pass  # Handle Ctrl+C gracefully
 
-    client.running = False
+    client.running = (
+        False  # Set the running flag to False to exit the receive_data loop
+    )

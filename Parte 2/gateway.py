@@ -1,35 +1,33 @@
 import socket
 import threading
-import sys
 import time
+import signal
 
 
-class IoTDevice:
-    def __init__(self, device_id):
-        self.device_id = device_id
-        self.data = 0
-
-    def generate_data(self):
-        # Emulate data generation
-        self.data += 1
-        return f"Device {self.device_id} - Data: {self.data}"
-
-
-class IotGateway:
+class IoTGateway:
     def __init__(self, host, port):
         self.host = host
         self.port = port
-        self.devices = [IoTDevice(device_id) for device_id in range(1, 4)]
+        self.clients = []  # List to keep track of connected clients
+        self.running = True
+
+    def handle_shutdown(self, signum, frame):
+        print("Shutting down the gateway...")
+        self.running = False
+        for client_socket in self.clients:
+            client_socket.close()
 
     def start(self):
+        signal.signal(signal.SIGINT, self.handle_shutdown)
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.bind((self.host, self.port))
         server_socket.listen(5)
         print(f"Gateway is listening on {self.host}:{self.port}")
 
-        while True:
+        while self.running:
             client_socket, client_address = server_socket.accept()
             print(f"Accepted connection from {client_address}")
+            self.clients.append(client_socket)
             client_thread = threading.Thread(
                 target=self.handle_client, args=(client_socket,)
             )
@@ -37,20 +35,18 @@ class IotGateway:
 
     def handle_client(self, client_socket):
         try:
-            while True:
-                # Send data from devices to the client
-                for device in self.devices:
-                    data = device.generate_data()
-                    client_socket.send(data.encode())
+            while self.running:
+                data = client_socket.recv(1024)
+                if not data:
+                    break
+                print(f"Received message from client: {data.decode()}")
 
-                time.sleep(5)  # Sleep for 5 seconds before sending data again
-
+            self.clients.remove(client_socket)
+            client_socket.close()
         except Exception as e:
             print(f"Error handling client: {e}")
-        finally:
-            client_socket.close()
 
 
 if __name__ == "__main__":
-    gateway = IotGateway("localhost", 12345)
+    gateway = IoTGateway("localhost", 8080)
     gateway.start()
