@@ -15,6 +15,12 @@ class IoTClient:
         except Exception as e:
             print(f"Error: {e}")
 
+    def send_data(self, data):
+        try:
+            self.client_socket.send(data.encode())
+        except Exception as e:
+            print(f"Error sending data: {e}")
+
     def receive_data(self):
         try:
             while True:
@@ -31,6 +37,18 @@ class IoTClient:
 
 
 if __name__ == "__main__":
-    client = IoTClient("localhost", 12345)
+    client = IoTClient("localhost", 8080)
     client.connect()
-    client.receive_data()
+
+    try:
+        while client.running:
+            user_input = input(
+                "Enter data to send to the gateway (or 'quit' to exit): "
+            )
+            if user_input.lower() == "quit":
+                break
+            client.send_data(user_input)
+    except KeyboardInterrupt:
+        pass  # Handle Ctrl+C gracefully
+
+    client.running = False
