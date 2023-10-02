@@ -8,17 +8,10 @@ class IoTGateway:
     def __init__(self, host, port):
         self.host = host
         self.port = port
-        self.clients = []  # List to keep track of connected clients
+        self.clients = []
         self.running = True
 
-    def handle_shutdown(self, signum, frame):
-        print("Shutting down the gateway...")
-        self.running = False
-        for client_socket in self.clients:
-            client_socket.close()
-
     def start(self):
-        signal.signal(signal.SIGINT, self.handle_shutdown)
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.bind((self.host, self.port))
         server_socket.listen(5)
