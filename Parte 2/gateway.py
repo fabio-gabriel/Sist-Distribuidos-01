@@ -1,7 +1,5 @@
 import socket
 import threading
-import time
-import signal
 
 
 class IoTGateway:

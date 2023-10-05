@@ -2,21 +2,13 @@ import socket
 import signal
 
 
-class IoTClient:
+class IoTDevice:
     def __init__(self, host, port):
         self.host = host
         self.port = port
         self.client_socket = None
-        self.running = True  # Flag to control the main loop
-
-    def handle_shutdown(self, signum, frame):
-        print("Closing the client...")
-        self.running = False
-        if self.client_socket:
-            self.client_socket.close()
 
     def connect(self):
-        signal.signal(signal.SIGBREAK, self.handle_shutdown)
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self.client_socket.connect((self.host, self.port))
@@ -44,7 +36,7 @@ class IoTClient:
 
 
 if __name__ == "__main__":
-    client = IoTClient("localhost", 8080)
+    client = IoTDevice("localhost", 8080)
     client.connect()
 
     while client.running:
