@@ -52,6 +52,8 @@ class IoTGateway:
             if user_input.lower() == "quit":
                 print("Closing the gateway...")
                 gateway.running = False
+                for client in self.clients:
+                    client.close()
                 os._exit(1)
             elif user_input.lower() == "status":
                 # Some code like this to request and print all device statuses
@@ -70,6 +72,7 @@ class IoTGateway:
                     "quit": "Exit the program.",
                     "help": "Display a list of available commands.",
                 }
+                print("These are the available commands: \n")
                 for command, desc in commands.items():
                     print(f"{command}: {desc}")
             else:
