@@ -7,8 +7,16 @@ class IoTDevice:
         self.host = host
         self.port = port
         self.client_socket = None
+        self.running = True  # Flag to control the main loop
+
+    def handle_shutdown(self, signum, frame):
+        print("Closing the client...")
+        self.running = False
+        if self.client_socket:
+            self.client_socket.close()
 
     def connect(self):
+        signal.signal(signal.SIGBREAK, self.handle_shutdown)
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self.client_socket.connect((self.host, self.port))
