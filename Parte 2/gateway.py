@@ -67,7 +67,8 @@ class IoTGateway:
                 os._exit(1)
             elif user_input.lower() == "status":
                 # Some code like this to request and print all device statuses
-                # status = "\n".join(device.generate_data() for device in gateway.devices)
+                # status = "\n".join(device.request_data() for device in gateway.devices)
+                # Should use the send_data() broadcast function to get all the statuses
                 print_table(
                     [
                         ["Device", "Status", "Data"],
@@ -86,6 +87,7 @@ class IoTGateway:
                 for command, desc in commands.items():
                     print(f"{command}: {desc}")
             elif user_input.lower() == "ping":
+                # Send anything to devices
                 ping_input = input("Type in the ping message: ")
                 self.send_data(ping_input)
             else:

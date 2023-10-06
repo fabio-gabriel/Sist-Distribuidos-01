@@ -8,7 +8,7 @@
 
 
 def print_table(data):
-    # Define your table-printing logic here (same as in the previous answer)
+    # Define your table-printing logic here
     def print_row(row):
         # Define the column widths
         col_widths = [max(len(str(item)) for item in col) for col in zip(*data)]
