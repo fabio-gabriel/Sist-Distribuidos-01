@@ -1,5 +1,6 @@
 import socket
 import signal
+import threading
 
 
 class IoTDevice:
@@ -21,6 +22,9 @@ class IoTDevice:
         try:
             self.client_socket.connect((self.host, self.port))
             print(f"Connected to {self.host}:{self.port}")
+            receive_thread = threading.Thread(target=self.receive_data)
+            receive_thread.daemon = True
+            receive_thread.start()
         except Exception as e:
             print(f"Error: {e}")
 

@@ -18,12 +18,14 @@ class IoTGateway:
         server_socket.listen(5)
         print(f"Gateway is listening on {self.host}:{self.port}")
 
+        # Daemon thread for picking up user commands
         user_command_thread = threading.Thread(target=self.handle_user_commands)
         user_command_thread.daemon = (
             True  # Set as a daemon thread to exit when the main thread exits
         )
         user_command_thread.start()
 
+        # Main thread for accepting new connections
         while self.running:
             client_socket, client_address = server_socket.accept()
             print(f"Accepted connection from {client_address}")
@@ -45,6 +47,14 @@ class IoTGateway:
             client_socket.close()
         except Exception as e:
             print(f"Error handling client: {e}")
+
+    # Broadcast function
+    def send_data(self, data):
+        try:
+            for client_socket in self.clients:
+                client_socket.send(data.encode())
+        except Exception as e:
+            print(f"Error sending data: {e}")
 
     def handle_user_commands(self):
         while self.running:
@@ -75,6 +85,9 @@ class IoTGateway:
                 print("These are the available commands: \n")
                 for command, desc in commands.items():
                     print(f"{command}: {desc}")
+            elif user_input.lower() == "ping":
+                ping_input = input("Type in the ping message: ")
+                self.send_data(ping_input)
             else:
                 print("Invalid command. Type \help for all commands")
 
