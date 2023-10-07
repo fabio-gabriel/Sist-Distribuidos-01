@@ -20,9 +20,7 @@ class IoTGateway:
 
         # Daemon thread for picking up user commands
         user_command_thread = threading.Thread(target=self.handle_user_commands)
-        user_command_thread.daemon = (
-            True  # Set as a daemon thread to exit when the main thread exits
-        )
+        user_command_thread.daemon = True  # Set as a daemon thread to exit when the main thread exits
         user_command_thread.start()
 
         # Main thread for accepting new connections
@@ -30,9 +28,7 @@ class IoTGateway:
             client_socket, client_address = server_socket.accept()
             print(f"Accepted connection from {client_address}")
             self.clients.append(client_socket)
-            client_thread = threading.Thread(
-                target=self.handle_client, args=(client_socket,)
-            )
+            client_thread = threading.Thread(target=self.handle_client, args=(client_socket,))
             client_thread.start()
 
     def handle_client(self, client_socket):
