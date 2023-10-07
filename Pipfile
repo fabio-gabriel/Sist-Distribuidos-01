@@ -4,9 +4,15 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+pydantic = "*"
 
 [dev-packages]
 black = "*"
+protobuf = "*"
+grpcio-tools = "*"
+
+[scripts]
+lint = './lint.sh'
 
 [requires]
 python_version = "3.9"
