@@ -11,6 +11,7 @@ class IoTGateway:
         self.host = host
         self.port = port
         self.clients = []
+        self.device_id = 1  # counter for the device ids
         self.running = True
 
     def start(self):
@@ -34,19 +35,29 @@ class IoTGateway:
 
     def handle_client(self, client_socket):
         try:
+            device_type = client_socket.recv(1024).decode()
+
+            device_id = self.device_id
+            self.device_id += 1  # Increment the device ID counter
+            print(f"Assigned Device ID {device_id} to client {client_socket.getpeername()} of type {device_type}")
+
             while self.running:
                 data = client_socket.recv(1024)
                 if not data:
                     break
-                action_message = proto.device_pb2.ActionMessage()
-                action_message.ParseFromString(data)
-
-                print(action_message)
+                self.handle_messages(data, device_type)
 
             self.clients.remove(client_socket)
             client_socket.close()
         except Exception as e:
             print(f"Error handling client: {e}")
+
+    def handle_messages(self, data, device_type):
+        if device_type == "thermostat":
+            action_message = proto.device_pb2.ThermostatStatus()
+            action_message.ParseFromString(data)
+
+            print(action_message)
 
     # Broadcast function
     def send_data(self, data):

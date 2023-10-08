@@ -2,6 +2,7 @@ import socket
 import signal
 import threading
 import time
+import random
 import proto.device_pb2
 
 
@@ -11,6 +12,7 @@ class IoTDevice:
         self.port = port
         self.client_socket = None
         self.running = True  # Flag to control the main loop
+        self.device_type = "thermostat"
         self.status = {"temperature": 21}
 
     def handle_shutdown(self, signum, frame):
@@ -25,12 +27,20 @@ class IoTDevice:
         try:
             self.client_socket.connect((self.host, self.port))
             print(f"Connected to {self.host}:{self.port}")
+            self.send_device_type()
 
             periodic_updates_thread = threading.Thread(target=self.periodic_updates)
             periodic_updates_thread.daemon = True
             periodic_updates_thread.start()
         except Exception as e:
             print(f"Error: {e}")
+
+    def send_device_type(self):
+        try:
+            # Send the device type as part of the handshake
+            self.client_socket.send(self.device_type.encode())
+        except Exception as e:
+            print(f"Error sending device type: {e}")
 
     def send_data(self):
         message = proto.device_pb2.ThermostatStatus()
@@ -43,6 +53,9 @@ class IoTDevice:
 
     def periodic_updates(self):
         while self.running:
+            # Set a random temperature
+            self.status["temperature"] = random.randint(18, 31)
+
             self.send_data()
             time.sleep(5)  # Send status every 30 seconds
 
