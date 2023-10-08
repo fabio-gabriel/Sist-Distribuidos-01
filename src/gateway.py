@@ -3,6 +3,7 @@ import threading
 import sys
 import os
 from table import print_table
+import proto.device_pb2
 
 
 class IoTGateway:
@@ -37,7 +38,10 @@ class IoTGateway:
                 data = client_socket.recv(1024)
                 if not data:
                     break
-                print(f"Received message from client: {data.decode()}")
+                action_message = proto.device_pb2.ActionMessage()
+                action_message.ParseFromString(data)
+
+                print(action_message)
 
             self.clients.remove(client_socket)
             client_socket.close()
@@ -51,6 +55,16 @@ class IoTGateway:
                 client_socket.send(data.encode())
         except Exception as e:
             print(f"Error sending data: {e}")
+
+    def send_status(self, temp):
+        message = proto.device_pb2.ActionMessage()
+        message.action = proto.device_pb2.ActionMessage.TEMPERATURE
+        message.value = str(temp)
+
+        try:
+            self.clients[0].send(message.SerializeToString())
+        except Exception as e:
+            print(f"Error sending status message: {e}")
 
     def handle_user_commands(self):
         while self.running:
@@ -86,6 +100,8 @@ class IoTGateway:
                 # Send anything to devices
                 ping_input = input("Type in the ping message: ")
                 self.send_data(ping_input)
+            elif user_input.lower() == "update":
+                self.update_device()
             else:
                 print("Invalid command. Type help for all commands")
 
