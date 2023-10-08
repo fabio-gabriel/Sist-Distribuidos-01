@@ -73,13 +73,13 @@ class IoTGateway:
                         ["Device 3", "Off", 1],
                     ]
                 )
-            elif user_input.lower() == "\help":
+            elif user_input.lower() == "help":
                 commands = {
-                    "status": "Check the current status of the program.",
+                    "\nstatus": "Check the current status of the program.",
                     "quit": "Exit the program.",
-                    "help": "Display a list of available commands.",
+                    "help": "Display a list of available commands.\n",
                 }
-                print("These are the available commands: \n")
+                print("\nThese are the available commands:")
                 for command, desc in commands.items():
                     print(f"{command}: {desc}")
             elif user_input.lower() == "ping":
@@ -87,7 +87,7 @@ class IoTGateway:
                 ping_input = input("Type in the ping message: ")
                 self.send_data(ping_input)
             else:
-                print("Invalid command. Type \help for all commands")
+                print("Invalid command. Type help for all commands")
 
 
 if __name__ == "__main__":
