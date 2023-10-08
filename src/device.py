@@ -59,6 +59,4 @@ if __name__ == "__main__":
             break
         client.send_data(user_input)
 
-    client.running = (
-        False  # Set the running flag to False to exit the receive_data loop
-    )
+    client.running = False  # Set the running flag to False to exit the receive_data loop
