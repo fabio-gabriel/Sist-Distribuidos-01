@@ -12,7 +12,7 @@ class IoTDevice:
         self.client_socket = None
         self.running = True  # Flag to control the main loop
         self.device_type = "airconditioner"
-        self.status = {"isOn": False, "temperature": 21}
+        self.status = {"temperature": 21}
 
     def handle_shutdown(self, signum, frame):
         print("Closing the client...")
@@ -42,33 +42,12 @@ class IoTDevice:
         except Exception as e:
             print(f"Error sending device type: {e}")
 
-    def send_data(self, type):
-        if type == "status":
-            message = proto.device_pb2.StatusMessage()
-            message.is_on = self.status["isOn"]
-            message.temperature = self.status["temperature"]
+    def send_data(self):
+        message = proto.device_pb2.StatusMessage()
+        message.temperature = self.status["temperature"]
 
-        else:
-            if self.status["isOn"]:
-                temp = input("Type in the desired temperature: ")
-                message = proto.device_pb2.ActionMessage()
-                message.action = proto.device_pb2.ActionMessage.TEMPERATURE
-                message.value = str(temp)
-
-                wrapper = proto.device_pb2.AirConditionerMessage()
-                wrapper.action.CopyFrom(message)
-            else:
-                on = input("The air conditioner is off. Turn it on? (type 'yes' or 'no'): ")
-                if on == "no":
-                    return
-                message = proto.device_pb2.ActionMessage()
-                message.action = proto.device_pb2.ActionMessage.STATUS
-                message.value = str(1)
-
-                wrapper = proto.device_pb2.AirConditionerMessage()
-                wrapper.action.CopyFrom(message)
         try:
-            self.client_socket.send(wrapper.SerializeToString())
+            self.client_socket.send(message.SerializeToString())
         except Exception as e:
             print(f"Error sending status message: {e}")
 
@@ -78,14 +57,20 @@ class IoTDevice:
                 data = self.client_socket.recv(1024)
                 if not data:
                     break
-                action_message = proto.device_pb2.ActionMessage()
-                action_message.ParseFromString(data)
 
-                if action_message.action == proto.device_pb2.ActionMessage.STATUS:
-                    self.status["isOn"] = action_message.value == "on"
-                elif action_message.action == proto.device_pb2.ActionMessage.TEMPERATURE:
+                air_conditioner_message = proto.device_pb2.AirConditionerMessage()
+                air_conditioner_message.ParseFromString(data)
+
+                if air_conditioner_message.HasField("status"):
+                    status_message = air_conditioner_message.status
+                    self.send_data()
+
+                if air_conditioner_message.HasField("action"):
+                    action_message = air_conditioner_message.action
+
                     self.status["temperature"] = int(action_message.value)
-                print("The device has been updated: ", self.status)
+                    print("The device has been updated: ", self.status)
+
             self.client_socket.close()
         except Exception as e:
             print(f"Error: {e}")

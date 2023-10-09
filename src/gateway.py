@@ -67,21 +67,42 @@ class IoTGateway:
             print(message)
 
     def send_message(self, device_id):
-        device_type = self.clients[device_id]["type"]
+        for device_id in self.clients:
+            device_type = self.clients[device_id]["type"]
+            device_socket = self.clients[device_id]["socket"]
 
         if device_type == "airconditioner":
-            message = proto.device_pb2.StatusMessage()
-            message.ParseFromString(message)
+            temperature = input("Type in the air conditioner temperature: ")
 
-            print(message)
+            message = proto.device_pb2.ActionMessage()
+            message.action = proto.device_pb2.ActionMessage.TEMPERATURE
+            message.value = str(temperature)
+
+            wrapper = proto.device_pb2.AirConditionerMessage()
+            wrapper.action.CopyFrom(message)
+
+            try:
+                device_socket.send(wrapper.SerializeToString())
+            except Exception as e:
+                print(f"Error sending status message: {e}")
 
     # Broadcast function
-    def send_data(self, data):
-        try:
-            for client_socket in self.clients:
-                client_socket.send(data.encode())
-        except Exception as e:
-            print(f"Error sending data: {e}")
+    def broadcast_data(self):
+        for device_id, device_info in self.clients.items():
+            client_socket = device_info["socket"]
+            client_type = device_info["type"]
+            try:
+                if client_type == "airconditioner":
+                    message = proto.device_pb2.StatusMessage()
+                    message.temperature = 1
+
+                    wrapper = proto.device_pb2.AirConditionerMessage()
+                    wrapper.status.CopyFrom(message)
+
+                client_socket.send(wrapper.SerializeToString())
+
+            except Exception as e:
+                print(f"Error sending message to device {device_id}: {e}")
 
     def handle_user_commands(self):
         while self.running:
@@ -92,18 +113,10 @@ class IoTGateway:
                 for device_id, device_info in self.clients.items():
                     device_info["socket"].close()
                 os._exit(1)
+
             elif user_input.lower() == "status":
-                # Some code like this to request and print all device statuses
-                # status = "\n".join(device.request_data() for device in gateway.devices)
-                # Should use the send_data() broadcast function to get all the statuses
-                print_table(
-                    [
-                        ["Device", "Status", "Data"],
-                        ["Device 1", "On", 5],
-                        ["Device 2", "Standby", 17],
-                        ["Device 3", "Off", 1],
-                    ]
-                )
+                self.broadcast_data()
+
             elif user_input.lower() == "help":
                 commands = {
                     "\nstatus": "Check the current status of the program.",
@@ -113,11 +126,6 @@ class IoTGateway:
                 print("\nThese are the available commands:")
                 for command, desc in commands.items():
                     print(f"{command}: {desc}")
-
-            elif user_input.lower() == "ping":
-                # Send anything to devices
-                ping_input = input("Type in the ping message: ")
-                self.send_data(ping_input)
 
             elif user_input.lower() == "update":
                 device = input("Input the device id: ")

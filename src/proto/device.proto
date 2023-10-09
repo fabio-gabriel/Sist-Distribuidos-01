@@ -40,7 +40,6 @@ message Setter{
 }
 
 message StatusMessage {
-    bool is_on = 1;
     int32 temperature = 2;
 }
 
