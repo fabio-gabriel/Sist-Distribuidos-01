@@ -1,6 +1,5 @@
 import socket
 import threading
-import sys
 import os
 import proto.device_pb2
 

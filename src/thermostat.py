@@ -5,6 +5,7 @@ import time
 import random
 import proto.device_pb2
 
+
 class IoTDevice:
     def __init__(self, host, port):
         self.host = host
@@ -57,7 +58,8 @@ class IoTDevice:
             self.status["temperature"] = random.randint(18, 31)
 
             self.send_data()  # Send the temperature data to the server
-            time.sleep(5)  # Send status every 5 seconds
+            time.sleep(30)  # Send status every 5 seconds
+
 
 if __name__ == "__main__":
     client = IoTDevice("localhost", 8080)
