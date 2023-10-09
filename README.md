@@ -1,27 +1,29 @@
-# Sistemas Distribuidos
-# Ambiente Inteligente (Sistema Distribuídos 2023.2)
+# Ambiente Inteligente (Sistemas Distribuídos 2023.2)
 
 ## Descrição do Projeto
 
-Este repositório abriga a implementação da segunda fase do projeto de Ambiente Inteligente. Nessa etapa, desenvolvemos um ambiente inteligente que faz uso da tecnologia Protocol Buffers para definir mensagens e facilitar a comunicação entre o Gateway e os objetos (Dispositivos e Sensores) que foram criados e implementados usando a linguagem de programação Python.
+Este repositório contém a implementação da segunda fase do projeto Ambiente Inteligente. Nesta etapa, desenvolvemos um ambiente inteligente que utiliza a tecnologia Protocol Buffers para definir mensagens e facilitar a comunicação entre o Gateway e os objetos (Dispositivos e Sensores) implementados em Python.
 
-## GATEWAY
+## Instruções de Uso
 
-### Como Rodar
+1. Primeiro, instale o Pipenv usando o pip:
 
-com o pip instale o pipenv
+   ```bash
+   pip install pipenv
+2. Em seguida, na pasta raiz do projeto, configure suas variáveis de ambiente no arquivo .env. Para criar o arquivo .env, basta copiar o arquivo .env.example:
+    ```bash
+    cp .env.example .env
+3. Depois, instale as dependências:
+    ```bash
+    pipenv install && pipenv install -d
 
-depois na pasta raiz do projeto sete suas variaveis de ambiente no .env
-para criar o .env basta copiar o .env.example
-
-```bash
-cp .env.example .env
-```
-
-Depois instale os requisitos
-
-```bash
-pipenv install && pipenv install -d
-```
-
-Melhorar readme
+## Execução
+1. Em um terminal, execute o seguinte comando para iniciar o Gateway:
+    ```bash
+    python gateway.py
+2. Repita o processo para iniciar os dispositivos:
+    ```bash
+    python thermostat.py
+    ```
+    ```bash
+    python airconditioner.py
