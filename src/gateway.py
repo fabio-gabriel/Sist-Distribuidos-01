@@ -86,6 +86,21 @@ class IoTGateway:
             except Exception as e:
                 print(f"Error sending status message: {e}")
 
+        elif device_type == "lightbulb":
+            switch = input("Switch on/off the lightbulb? (1 for on, 0 for off): ")
+
+            message = proto.device_pb2.LightAction()
+            message.action = proto.device_pb2.LightAction.SWITCH
+            message.value = str(switch)
+
+            wrapper = proto.device_pb2.LightbulbMessage()
+            wrapper.action.CopyFrom(message)
+
+            try:
+                device_socket.send(wrapper.SerializeToString())
+            except Exception as e:
+                print(f"Error sending status message: {e}")
+
     # Broadcast function
     def broadcast_data(self):
         for device_id, device_info in self.clients.items():
@@ -99,6 +114,12 @@ class IoTGateway:
                     wrapper = proto.device_pb2.AirConditionerMessage()
                     wrapper.status.CopyFrom(message)
 
+                elif client_type == "lightbulb":
+                    message = proto.device_pb2.LightStatus()
+                    message.switch = 1
+
+                    wrapper = proto.device_pb2.LightbulbMessage()
+                    wrapper.status.CopyFrom(message)
                 client_socket.send(wrapper.SerializeToString())
 
             except Exception as e:

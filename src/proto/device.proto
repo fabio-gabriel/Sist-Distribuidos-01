@@ -60,6 +60,27 @@ message AirConditionerMessage {
     }
 }
 
+message LightStatus {
+    bool isOn = 2;
+}
+
+message LightAction {
+    enum ActionType {
+        STATUS = 0;
+        SWITCH = 1;
+    }
+
+    ActionType action = 1;
+    string value = 2;
+}
+
+message LightbulbMessage{
+    oneof message_type {
+        LightStatus status = 1;
+        LightAction action = 2;
+    }
+}
+
 message ThermostatStatus {
     int32 temperature = 1;
 }
