@@ -2,7 +2,6 @@ import socket
 import threading
 import sys
 import os
-from table import print_table  # Assuming you have a custom "print_table" function
 import proto.device_pb2
 
 
