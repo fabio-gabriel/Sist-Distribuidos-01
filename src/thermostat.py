@@ -5,21 +5,21 @@ import time
 import random
 import proto.device_pb2
 
-
 class IoTDevice:
     def __init__(self, host, port):
         self.host = host
         self.port = port
         self.client_socket = None
         self.running = True  # Flag to control the main loop
-        self.device_type = "thermostat"
-        self.status = {"temperature": 21}
+        self.device_type = "thermostat"  # Device type (thermostat)
+        self.status = {"temperature": 21}  # Initial state with temperature
 
     def handle_shutdown(self, signum, frame):
+        # Function to handle client shutdown
         print("Closing the client...")
-        self.running = False
+        self.running = False  # Set the running flag to False
         if self.client_socket:
-            self.client_socket.close()
+            self.client_socket.close()  # Close the client socket
 
     def connect(self):
         signal.signal(signal.SIGBREAK, self.handle_shutdown)
@@ -27,11 +27,11 @@ class IoTDevice:
         try:
             self.client_socket.connect((self.host, self.port))
             print(f"Connected to {self.host}:{self.port}")
-            self.send_device_type()
+            self.send_device_type()  # Send the device type as part of the handshake
 
             periodic_updates_thread = threading.Thread(target=self.periodic_updates)
             periodic_updates_thread.daemon = True
-            periodic_updates_thread.start()
+            periodic_updates_thread.start()  # Start a thread for periodic updates
         except Exception as e:
             print(f"Error: {e}")
 
@@ -56,19 +56,18 @@ class IoTDevice:
             # Set a random temperature
             self.status["temperature"] = random.randint(18, 31)
 
-            self.send_data()
-            time.sleep(5)  # Send status every 30 seconds
-
+            self.send_data()  # Send the temperature data to the server
+            time.sleep(5)  # Send status every 5 seconds
 
 if __name__ == "__main__":
     client = IoTDevice("localhost", 8080)
-    client.connect()
+    client.connect()  # Establish the connection with the server
 
     while client.running:
         user_input = input("Enter data to send to the gateway (or 'quit' to exit): ")
         if user_input.lower() == "quit":
             print("Closing the client...")
-            client.client_socket.close()
+            client.client_socket.close()  # Close the client socket
             break
 
     client.running = False  # Set the running flag to False to exit the receive_data loop
