@@ -10,8 +10,8 @@ class IoTGateway:
     def __init__(self, host, port):
         self.host = host
         self.port = port
-        self.clients = []
-        self.device_id = 1  # counter for the device ids
+        self.clients = {}
+        self.device_id = 0  # counter for the device ids
         self.running = True
 
     def start(self):
@@ -29,7 +29,6 @@ class IoTGateway:
         while self.running:
             client_socket, client_address = server_socket.accept()
             print(f"Accepted connection from {client_address}")
-            self.clients.append(client_socket)
             client_thread = threading.Thread(target=self.handle_client, args=(client_socket,))
             client_thread.start()
 
@@ -39,6 +38,8 @@ class IoTGateway:
 
             device_id = self.device_id
             self.device_id += 1  # Increment the device ID counter
+
+            self.clients[device_id] = {"socket": client_socket, "type": device_type}
             print(f"Assigned Device ID {device_id} to client {client_socket.getpeername()} of type {device_type}")
 
             while self.running:
@@ -48,16 +49,31 @@ class IoTGateway:
                 self.handle_messages(data, device_type)
 
             self.clients.remove(client_socket)
-            client_socket.close()
+            client_socket["socket"].close()
         except Exception as e:
             print(f"Error handling client: {e}")
 
     def handle_messages(self, data, device_type):
         if device_type == "thermostat":
-            action_message = proto.device_pb2.ThermostatStatus()
-            action_message.ParseFromString(data)
+            message = proto.device_pb2.ThermostatStatus()
+            message.ParseFromString(data)
 
-            print(action_message)
+            print(message)
+
+        elif device_type == "airconditioner":
+            message = proto.device_pb2.StatusMessage()
+            message.ParseFromString(message)
+
+            print(message)
+
+    def send_message(self, device_id):
+        device_type = self.clients[device_id]["type"]
+
+        if device_type == "airconditioner":
+            message = proto.device_pb2.StatusMessage()
+            message.ParseFromString(message)
+
+            print(message)
 
     # Broadcast function
     def send_data(self, data):
@@ -67,24 +83,14 @@ class IoTGateway:
         except Exception as e:
             print(f"Error sending data: {e}")
 
-    def send_status(self, temp):
-        message = proto.device_pb2.ActionMessage()
-        message.action = proto.device_pb2.ActionMessage.TEMPERATURE
-        message.value = str(temp)
-
-        try:
-            self.clients[0].send(message.SerializeToString())
-        except Exception as e:
-            print(f"Error sending status message: {e}")
-
     def handle_user_commands(self):
         while self.running:
             user_input = input("Enter a command (or 'quit' to exit): ")
             if user_input.lower() == "quit":
                 print("Closing the gateway...")
                 gateway.running = False
-                for client in self.clients:
-                    client.close()
+                for device_id, device_info in self.clients.items():
+                    device_info["socket"].close()
                 os._exit(1)
             elif user_input.lower() == "status":
                 # Some code like this to request and print all device statuses
@@ -107,12 +113,19 @@ class IoTGateway:
                 print("\nThese are the available commands:")
                 for command, desc in commands.items():
                     print(f"{command}: {desc}")
+
             elif user_input.lower() == "ping":
                 # Send anything to devices
                 ping_input = input("Type in the ping message: ")
                 self.send_data(ping_input)
+
             elif user_input.lower() == "update":
-                self.update_device()
+                device = input("Input the device id: ")
+                self.send_message(device)
+
+            elif user_input.lower() == "show":
+                print(self.clients)
+
             else:
                 print("Invalid command. Type help for all commands")
 

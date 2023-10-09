@@ -54,6 +54,13 @@ message ActionMessage {
     string value = 2;
 }
 
+message AirConditionerMessage {
+    oneof message_type {
+        StatusMessage status = 1;
+        ActionMessage action = 2;
+    }
+}
+
 message ThermostatStatus {
     int32 temperature = 1;
 }

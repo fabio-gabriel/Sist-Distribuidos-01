@@ -11,6 +11,7 @@ class IoTDevice:
         self.port = port
         self.client_socket = None
         self.running = True  # Flag to control the main loop
+        self.device_type = "airconditioner"
         self.status = {"isOn": False, "temperature": 21}
 
     def handle_shutdown(self, signum, frame):
@@ -25,30 +26,49 @@ class IoTDevice:
         try:
             self.client_socket.connect((self.host, self.port))
             print(f"Connected to {self.host}:{self.port}")
+            self.send_device_type()
+
             receive_thread = threading.Thread(target=self.receive_data)
             receive_thread.daemon = True
             receive_thread.start()
 
-            periodic_updates_thread = threading.Thread(target=self.periodic_updates)
-            periodic_updates_thread.daemon = True
-            periodic_updates_thread.start()
         except Exception as e:
             print(f"Error: {e}")
 
-    def send_data(self, type="status"):
+    def send_device_type(self):
+        try:
+            # Send the device type as part of the handshake
+            self.client_socket.send(self.device_type.encode())
+        except Exception as e:
+            print(f"Error sending device type: {e}")
+
+    def send_data(self, type):
         if type == "status":
             message = proto.device_pb2.StatusMessage()
             message.is_on = self.status["isOn"]
             message.temperature = self.status["temperature"]
 
         else:
-            temp = input("Type in the desired temperature: ")
-            message = proto.device_pb2.ActionMessage()
-            message.action = proto.device_pb2.ActionMessage.TEMPERATURE
-            message.value = str(temp)
+            if self.status["isOn"]:
+                temp = input("Type in the desired temperature: ")
+                message = proto.device_pb2.ActionMessage()
+                message.action = proto.device_pb2.ActionMessage.TEMPERATURE
+                message.value = str(temp)
 
+                wrapper = proto.device_pb2.AirConditionerMessage()
+                wrapper.action.CopyFrom(message)
+            else:
+                on = input("The air conditioner is off. Turn it on? (type 'yes' or 'no'): ")
+                if on == "no":
+                    return
+                message = proto.device_pb2.ActionMessage()
+                message.action = proto.device_pb2.ActionMessage.STATUS
+                message.value = str(1)
+
+                wrapper = proto.device_pb2.AirConditionerMessage()
+                wrapper.action.CopyFrom(message)
         try:
-            self.clients[0].send(message.SerializeToString())
+            self.client_socket.send(wrapper.SerializeToString())
         except Exception as e:
             print(f"Error sending status message: {e}")
 
@@ -69,11 +89,6 @@ class IoTDevice:
             self.client_socket.close()
         except Exception as e:
             print(f"Error: {e}")
-
-    def periodic_updates(self):
-        while self.running:
-            self.send_data(self.status)
-            time.sleep(30)  # Send status every 30 seconds
 
 
 if __name__ == "__main__":
