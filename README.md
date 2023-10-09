@@ -1,5 +1,9 @@
 # Sistemas Distribuidos
-Trabalho 01 de sistemas distribuídos 2023.2
+# Ambiente Inteligente (Sistema Distribuídos 2023.2)
+
+## Descrição do Projeto
+
+Este repositório abriga a implementação da segunda fase do projeto de Ambiente Inteligente. Nessa etapa, desenvolvemos um ambiente inteligente que faz uso da tecnologia Protocol Buffers para definir mensagens e facilitar a comunicação entre o Gateway e os objetos (Dispositivos e Sensores) que foram criados e implementados usando a linguagem de programação Python.
 
 ## GATEWAY
 
