@@ -8,8 +8,10 @@ class IoTGateway:
     def __init__(self, host, port):
         self.host = host
         self.port = port
+        self.devices = {}
         self.clients = {}
         self.device_id = 0  # Counter for the device IDs
+        self.client_id = 0  # Counter for client IDs
         self.running = True  # Flag to control main loop
 
     def start(self):
@@ -28,20 +30,29 @@ class IoTGateway:
         while self.running:
             client_socket, client_address = server_socket.accept()
             print(f"Accepted connection from {client_address}")
-            client_thread = threading.Thread(target=self.handle_client, args=(client_socket,))
+            client_thread = threading.Thread(target=self.handle_device, args=(client_socket,))
             client_thread.start()
 
-    def handle_client(self, client_socket):
+    def handle_device(self, client_socket):
         # Receive and decode the device type sent by the client
         try:
             device_type = client_socket.recv(1024).decode()
 
-            device_id = self.device_id
-            self.device_id += 1  # Increment the device ID counter
+            if device_type == "client":
+                client_id = self.client_id
+                self.client_id += 1  # Increment the device ID counter
 
-            # Store client information in a dictionary
-            self.clients[device_id] = {"socket": client_socket, "type": device_type}
-            print(f"Assigned Device ID {device_id} to client {client_socket.getpeername()} of type {device_type}")
+                # Store client information in a dictionary
+                self.clients[client_id] = {"socket": client_socket, "type": device_type}
+                print(f"Assigned Client ID {client_id} to client {client_socket.getpeername()} of type {device_type}")
+
+            else:
+                device_id = self.device_id
+                self.device_id += 1  # Increment the device ID counter
+
+                # Store client information in a dictionary
+                self.devices[device_id] = {"socket": client_socket, "type": device_type}
+                print(f"Assigned Device ID {device_id} to client {client_socket.getpeername()} of type {device_type}")
 
             while self.running:
                 data = client_socket.recv(1024)
@@ -50,7 +61,7 @@ class IoTGateway:
                 self.handle_messages(data, device_type)
 
             # Remove the client from the dictionary and close the socket
-            del self.clients[device_id]
+            del self.devices[device_id]
             client_socket.close()
         except Exception as e:
             print(f"Error handling client: {e}")
@@ -71,9 +82,9 @@ class IoTGateway:
 
     def send_message(self, device_id):
         # Find the dictionary entry with the matching device ID
-        for device_id in self.clients:
-            device_type = self.clients[device_id]["type"]
-            device_socket = self.clients[device_id]["socket"]
+        for device_id in self.devices:
+            device_type = self.devices[device_id]["type"]
+            device_socket = self.devices[device_id]["socket"]
 
         if device_type == "airconditioner":
             temperature = input("Type in the air conditioner temperature: ")
@@ -107,7 +118,7 @@ class IoTGateway:
 
     # Broadcast function to send data to all devices
     def broadcast_data(self):
-        for device_id, device_info in self.clients.items():
+        for device_id, device_info in self.devices.items():
             client_socket = device_info["socket"]
             client_type = device_info["type"]
             try:
@@ -136,7 +147,7 @@ class IoTGateway:
             if user_input.lower() == "quit":
                 print("Closing the gateway...")
                 self.running = False  # Set the running flag to False
-                for device_id, device_info in self.clients.items():
+                for device_id, device_info in self.devices.items():
                     device_info["socket"].close()
                 os._exit(1)  # Exit the program
 
@@ -161,7 +172,7 @@ class IoTGateway:
 
             elif user_input.lower() == "show":
                 # Show the list of connected clients
-                print(self.clients)
+                print(self.devices)
 
             else:
                 print("Invalid command. Type help for all commands")
