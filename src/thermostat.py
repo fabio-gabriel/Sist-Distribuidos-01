@@ -58,7 +58,7 @@ class IoTDevice:
             self.status["temperature"] = random.randint(18, 31)
 
             self.send_data()  # Send the temperature data to the server
-            time.sleep(30)  # Send status every 5 seconds
+            time.sleep(5)  # Send status every 5 seconds
 
 
 if __name__ == "__main__":
