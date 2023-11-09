@@ -1,6 +1,7 @@
 import socket
 import signal
 import threading
+import os
 import proto.device_pb2
 
 
@@ -26,7 +27,7 @@ class Client:
             print(f"Connected to {self.host}:{self.port}")
             self.send_device_type()
 
-            receive_thread = threading.Thread(target=self.handle_messages)
+            receive_thread = threading.Thread(target=self.handle_user_commands)
             receive_thread.daemon = True
             receive_thread.start()
 
@@ -54,14 +55,41 @@ class Client:
         except Exception as e:
             print(f"Error sending status message: {e}")
 
-    def handle_messages(self):
+    def handle_user_commands(self):
         while self.running:
-            data = self.client_socket.recv(1024)
-            if not data:
-                break
+            user_input = input("Enter a command (or 'quit' to exit): ")
+            if user_input.lower() == "quit":
+                print("Closing the gateway...")
+                self.running = False  # Set the running flag to False
+                for device_id, device_info in self.devices.items():
+                    device_info["socket"].close()
+                os._exit(1)  # Exit the program
 
-            print("received data", data)
-        # Handle messages based on the device type
+            elif user_input.lower() == "status":
+                self.broadcast_data()
+
+            elif user_input.lower() == "help":
+                # Display available commands and descriptions
+                commands = {
+                    "\nstatus": "Check the current status of the program.",
+                    "quit": "Exit the program.",
+                    "help": "Display a list of available commands.\n",
+                }
+                print("\nThese are the available commands:")
+                for command, desc in commands.items():
+                    print(f"{command}: {desc}")
+
+            elif user_input.lower() == "update":
+                # Send a message to a specific device
+                device = input("Input the device ID: ")
+                self.send_message(device)
+
+            elif user_input.lower() == "show":
+                # Show the list of connected clients
+                print(self.devices)
+
+            else:
+                print("Invalid command. Type help for all commands")
 
 
 if __name__ == "__main__":
