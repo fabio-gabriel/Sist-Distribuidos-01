@@ -44,8 +44,9 @@ class IoTDevice:
             print(f"Error sending device type: {e}")
 
     def send_data(self):
-        message = proto.device_pb2.ThermostatStatus()
-        message.temperature = self.status["temperature"]
+        message = proto.device_pb2.DeviceMessage()
+        message.type = proto.device_pb2.DeviceMessage.MessageType.THERMOSTAT
+        message.value = str(self.status["temperature"])
 
         try:
             self.client_socket.send(message.SerializeToString())

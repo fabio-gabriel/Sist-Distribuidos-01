@@ -42,8 +42,9 @@ class IoTDevice:
             print(f"Error sending device type: {e}")
 
     def send_data(self):
-        message = proto.device_pb2.ACStatus()
-        message.isOn = self.status["isOn"]
+        message = proto.device_pb2.DeviceMessage()
+        message.type = proto.device_pb2.DeviceMessage.MessageType.LIGHT
+        message.value = str(self.status["isOn"])
 
         try:
             self.client_socket.send(message.SerializeToString())
@@ -57,18 +58,18 @@ class IoTDevice:
                 if not data:
                     break
 
-                lightbulb_message = proto.device_pb2.LightbulbMessage()
+                lightbulb_message = proto.device_pb2.DeviceMessage()
                 lightbulb_message.ParseFromString(data)
 
-                if lightbulb_message.HasField("status"):
-                    status_message = lightbulb_message.status
+                command, value = lightbulb_message.value.split("=")
+
+                if command == "set_on":
+                    self.status["isOn"] = True if int(value) == 1 else False
+                    print("The device has been updated: ", self.status["isOn"])
+
+                elif command == "get_on":
                     self.send_data()
-
-                if lightbulb_message.HasField("action"):
-                    action_message = lightbulb_message.action
-
-                    self.status["isOn"] = True if int(action_message.value) == 1 else False
-                    print("The device has been updated: ", self.status)
+                    print("Data has been sent: ", self.status["isOn"])
 
             self.client_socket.close()
         except Exception as e:

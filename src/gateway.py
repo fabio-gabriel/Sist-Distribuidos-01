@@ -69,7 +69,7 @@ class IoTGateway:
     def handle_messages(self, data, device_type):
         # Handle messages based on the device type
         if device_type == "thermostat":
-            message = proto.device_pb2.ThermostatStatus()
+            message = proto.device_pb2.DeviceMessage()
             message.ParseFromString(data)
 
             print(message)
@@ -82,61 +82,57 @@ class IoTGateway:
 
     def send_message(self, device_id):
         # Find the dictionary entry with the matching device ID
-        for device_id in self.devices:
-            device_type = self.devices[device_id]["type"]
-            device_socket = self.devices[device_id]["socket"]
+        if device_id in self.devices:
+            device_info = self.devices[device_id]
+            device_socket, device_type = device_info["socket"], device_info["type"]
 
-        if device_type == "airconditioner":
-            temperature = input("Type in the air conditioner temperature: ")
+            if device_type == "airconditioner":
+                temperature = input("Type in the air conditioner temperature: ")
 
-            message = proto.device_pb2.ACAction()
-            message.action = proto.device_pb2.ACAction().TEMPERATURE
-            message.value = str(temperature)
+                message = proto.device_pb2.DeviceMessage()
+                message.type = proto.device_pb2.DeviceMessage.MessageType.AC
+                message.value = "set_temperature=" + temperature
 
-            wrapper = proto.device_pb2.AirConditionerMessage()
-            wrapper.action.CopyFrom(message)
+                try:
+                    device_socket.send(message.SerializeToString())
+                except Exception as e:
+                    print(f"Error sending status message: {e}")
 
-            try:
-                device_socket.send(wrapper.SerializeToString())
-            except Exception as e:
-                print(f"Error sending status message: {e}")
+            elif device_type == "lightbulb":
+                switch = input("Switch on/off the lightbulb? (1 for on, 0 for off): ")
 
-        elif device_type == "lightbulb":
-            switch = input("Switch on/off the lightbulb? (1 for on, 0 for off): ")
+                message = proto.device_pb2.DeviceMessage()
+                message.type = proto.device_pb2.DeviceMessage.MessageType.LIGHT
+                message.value = "set_on=" + switch
 
-            message = proto.device_pb2.LightAction()
-            message.action = proto.device_pb2.LightAction.SWITCH
-            message.value = str(switch)
+                try:
+                    device_socket.send(message.SerializeToString())
+                except Exception as e:
+                    print(f"Error sending status message: {e}")
 
-            wrapper = proto.device_pb2.LightbulbMessage()
-            wrapper.action.CopyFrom(message)
-
-            try:
-                device_socket.send(wrapper.SerializeToString())
-            except Exception as e:
-                print(f"Error sending status message: {e}")
+        else:
+            print("Did not find in", self.devices)
 
     # Broadcast function to send data to all devices
     def broadcast_data(self):
-        for device_id, device_info in self.devices.items():
-            client_socket = device_info["socket"]
-            client_type = device_info["type"]
+        for device_id, device in self.devices.items():
+            device_socket = device["socket"]
+            device_type = device["type"]
             try:
-                if client_type == "airconditioner":
-                    message = proto.device_pb2.ACStatus()
-                    message.temperature = 1
+                if device_type == "airconditioner":
+                    message = proto.device_pb2.DeviceMessage()
+                    message.type = proto.device_pb2.DeviceMessage.MessageType.AC
+                    message.value = "get_temperature"
 
-                    wrapper = proto.device_pb2.AirConditionerMessage()
-                    wrapper.status.CopyFrom(message)
-
-                elif client_type == "lightbulb":
-                    message = proto.device_pb2.LightStatus()
-                    message.switch = 1
+                elif device_type == "lightbulb":
+                    message = proto.device_pb2.DeviceMessage()
+                    message.type = proto.device_pb2.DeviceMessage.MessageType.LIGHT
+                    message.value = "get_on"
 
                     wrapper = proto.device_pb2.LightbulbMessage()
                     wrapper.status.CopyFrom(message)
 
-                client_socket.send(wrapper.SerializeToString())
+                device_socket.send(wrapper.SerializeToString())
 
             except Exception as e:
                 print(f"Error sending message to device {device_id}: {e}")
@@ -168,7 +164,7 @@ class IoTGateway:
             elif user_input.lower() == "update":
                 # Send a message to a specific device
                 device = input("Input the device ID: ")
-                self.send_message(device)
+                self.send_message(int(device))
 
             elif user_input.lower() == "show":
                 # Show the list of connected clients

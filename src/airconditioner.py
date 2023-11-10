@@ -57,18 +57,18 @@ class IoTDevice:
                 if not data:
                     break
 
-                air_conditioner_message = proto.device_pb2.AirConditionerMessage()
+                air_conditioner_message = proto.device_pb2.DeviceMessage()
                 air_conditioner_message.ParseFromString(data)
 
-                if air_conditioner_message.HasField("status"):
-                    status_message = air_conditioner_message.status
+                command, value = air_conditioner_message.value.split("=")
+
+                if command == "set_temperature":
+                    self.status["temperature"] = value
+                    print("The device has been updated: ", self.status["temperature"])
+
+                elif command == "get_temperature":
                     self.send_data()
-
-                if air_conditioner_message.HasField("action"):
-                    action_message = air_conditioner_message.action
-
-                    self.status["temperature"] = int(action_message.value)
-                    print("The device has been updated: ", self.status)
+                    print("Data has been sent: ", self.status["temperature"])
 
             self.client_socket.close()
         except Exception as e:

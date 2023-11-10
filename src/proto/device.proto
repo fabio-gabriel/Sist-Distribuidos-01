@@ -1,47 +1,12 @@
 syntax = "proto3";
 
-message ACStatus {
-    int32 temperature = 2;
-}
+message DeviceMessage {
+  enum MessageType {
+    AC = 0;
+    LIGHT = 1;
+    THERMOSTAT = 2;
+  }
 
-message ACMessage {
-    enum ActionType {
-        STATUS = 0;
-        TEMPERATURE = 1;
-    }
-
-    ActionType action = 1;
-    string value = 2;
-}
-
-message AirConditionerMessage {
-    oneof message_type {
-        ACStatus status = 1;
-        ACMessage action = 2;
-    }
-}
-
-message LightStatus {
-    bool isOn = 2;
-}
-
-message LightAction {
-    enum ActionType {
-        STATUS = 0;
-        SWITCH = 1;
-    }
-
-    ActionType action = 1;
-    string value = 2;
-}
-
-message LightbulbMessage{
-    oneof message_type {
-        LightStatus status = 1;
-        LightAction action = 2;
-    }
-}
-
-message ThermostatStatus {
-    int32 temperature = 1;
+  MessageType type = 1;
+  string value = 2;
 }

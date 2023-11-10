@@ -13,29 +13,15 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0c\x64\x65vice.proto\"\x1f\n\x08\x41\x43Status\x12\x13\n\x0btemperature\x18\x02 \x01(\x05\"l\n\tACMessage\x12%\n\x06\x61\x63tion\x18\x01 \x01(\x0e\x32\x15.ACMessage.ActionType\x12\r\n\x05value\x18\x02 \x01(\t\")\n\nActionType\x12\n\n\x06STATUS\x10\x00\x12\x0f\n\x0bTEMPERATURE\x10\x01\"b\n\x15\x41irConditionerMessage\x12\x1b\n\x06status\x18\x01 \x01(\x0b\x32\t.ACStatusH\x00\x12\x1c\n\x06\x61\x63tion\x18\x02 \x01(\x0b\x32\n.ACMessageH\x00\x42\x0e\n\x0cmessage_type\"\x1b\n\x0bLightStatus\x12\x0c\n\x04isOn\x18\x02 \x01(\x08\"k\n\x0bLightAction\x12\'\n\x06\x61\x63tion\x18\x01 \x01(\x0e\x32\x17.LightAction.ActionType\x12\r\n\x05value\x18\x02 \x01(\t\"$\n\nActionType\x12\n\n\x06STATUS\x10\x00\x12\n\n\x06SWITCH\x10\x01\"b\n\x10LightbulbMessage\x12\x1e\n\x06status\x18\x01 \x01(\x0b\x32\x0c.LightStatusH\x00\x12\x1e\n\x06\x61\x63tion\x18\x02 \x01(\x0b\x32\x0c.LightActionH\x00\x42\x0e\n\x0cmessage_type\"\'\n\x10ThermostatStatus\x12\x13\n\x0btemperature\x18\x01 \x01(\x05\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0c\x64\x65vice.proto\"z\n\rDeviceMessage\x12(\n\x04type\x18\x01 \x01(\x0e\x32\x1a.DeviceMessage.MessageType\x12\r\n\x05value\x18\x02 \x01(\t\"0\n\x0bMessageType\x12\x06\n\x02\x41\x43\x10\x00\x12\t\n\x05LIGHT\x10\x01\x12\x0e\n\nTHERMOSTAT\x10\x02\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'device_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
-  _globals['_ACSTATUS']._serialized_start=16
-  _globals['_ACSTATUS']._serialized_end=47
-  _globals['_ACMESSAGE']._serialized_start=49
-  _globals['_ACMESSAGE']._serialized_end=157
-  _globals['_ACMESSAGE_ACTIONTYPE']._serialized_start=116
-  _globals['_ACMESSAGE_ACTIONTYPE']._serialized_end=157
-  _globals['_AIRCONDITIONERMESSAGE']._serialized_start=159
-  _globals['_AIRCONDITIONERMESSAGE']._serialized_end=257
-  _globals['_LIGHTSTATUS']._serialized_start=259
-  _globals['_LIGHTSTATUS']._serialized_end=286
-  _globals['_LIGHTACTION']._serialized_start=288
-  _globals['_LIGHTACTION']._serialized_end=395
-  _globals['_LIGHTACTION_ACTIONTYPE']._serialized_start=359
-  _globals['_LIGHTACTION_ACTIONTYPE']._serialized_end=395
-  _globals['_LIGHTBULBMESSAGE']._serialized_start=397
-  _globals['_LIGHTBULBMESSAGE']._serialized_end=495
-  _globals['_THERMOSTATSTATUS']._serialized_start=497
-  _globals['_THERMOSTATSTATUS']._serialized_end=536
+  _globals['_DEVICEMESSAGE']._serialized_start=16
+  _globals['_DEVICEMESSAGE']._serialized_end=138
+  _globals['_DEVICEMESSAGE_MESSAGETYPE']._serialized_start=90
+  _globals['_DEVICEMESSAGE_MESSAGETYPE']._serialized_end=138
 # @@protoc_insertion_point(module_scope)
