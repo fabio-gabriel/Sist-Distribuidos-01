@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-message StatusMessage {
+message ACStatus {
     int32 temperature = 2;
 }
 
-message ActionMessage {
+message ACMessage {
     enum ActionType {
         STATUS = 0;
         TEMPERATURE = 1;
@@ -16,8 +16,8 @@ message ActionMessage {
 
 message AirConditionerMessage {
     oneof message_type {
-        StatusMessage status = 1;
-        ActionMessage action = 2;
+        ACStatus status = 1;
+        ACMessage action = 2;
     }
 }
 

@@ -42,7 +42,7 @@ class IoTDevice:
             print(f"Error sending device type: {e}")
 
     def send_data(self):
-        message = proto.device_pb2.StatusMessage()
+        message = proto.device_pb2.ACStatus()
         message.isOn = self.status["isOn"]
 
         try:

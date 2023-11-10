@@ -75,7 +75,7 @@ class IoTGateway:
             print(message)
 
         elif device_type == "airconditioner":
-            message = proto.device_pb2.StatusMessage()
+            message = proto.device_pb2.ACStatus()
             message.ParseFromString(data)
 
             print(message)
@@ -89,8 +89,8 @@ class IoTGateway:
         if device_type == "airconditioner":
             temperature = input("Type in the air conditioner temperature: ")
 
-            message = proto.device_pb2.ActionMessage()
-            message.action = proto.device_pb2.ActionMessage.TEMPERATURE
+            message = proto.device_pb2.ACAction()
+            message.action = proto.device_pb2.ACAction().TEMPERATURE
             message.value = str(temperature)
 
             wrapper = proto.device_pb2.AirConditionerMessage()
@@ -123,7 +123,7 @@ class IoTGateway:
             client_type = device_info["type"]
             try:
                 if client_type == "airconditioner":
-                    message = proto.device_pb2.StatusMessage()
+                    message = proto.device_pb2.ACStatus()
                     message.temperature = 1
 
                     wrapper = proto.device_pb2.AirConditionerMessage()
