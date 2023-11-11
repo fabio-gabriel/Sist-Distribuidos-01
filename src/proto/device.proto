@@ -5,8 +5,10 @@ message DeviceMessage {
     AC = 0;
     LIGHT = 1;
     THERMOSTAT = 2;
+    UPDATE = 3;
   }
 
   MessageType type = 1;
   string value = 2;
+  int64 id = 3;
 }

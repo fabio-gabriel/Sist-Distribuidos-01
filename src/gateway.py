@@ -2,6 +2,7 @@ import socket
 import threading
 import os
 import proto.device_pb2
+import json
 
 
 class IoTGateway:
@@ -40,17 +41,17 @@ class IoTGateway:
 
             if device_type == "client":
                 client_id = self.client_id
-                self.client_id += 1  # Increment the device ID counter
+                self.client_id += 1  # Increment the client ID counter
 
                 # Store client information in a dictionary
-                self.clients[client_id] = {"socket": client_socket, "type": device_type}
-                print(f"Assigned Client ID {client_id} to client {client_socket.getpeername()} of type {device_type}")
+                self.clients[client_id] = {"socket": client_socket}
+                print(f"Assigned Client ID {client_id} to client {client_socket.getpeername()}")
 
             else:
                 device_id = self.device_id
                 self.device_id += 1  # Increment the device ID counter
 
-                # Store client information in a dictionary
+                # Store device information in a dictionary
                 self.devices[device_id] = {"socket": client_socket, "type": device_type}
                 print(f"Assigned Device ID {device_id} to client {client_socket.getpeername()} of type {device_type}")
 
@@ -58,7 +59,7 @@ class IoTGateway:
                 data = client_socket.recv(1024)
                 if not data:
                     break
-                self.handle_messages(data, device_type)
+                self.handle_messages(data, device_type, client_socket)
 
             # Remove the client from the dictionary and close the socket
             del self.devices[device_id]
@@ -66,19 +67,26 @@ class IoTGateway:
         except Exception as e:
             print(f"Error handling client: {e}")
 
-    def handle_messages(self, data, device_type):
+    def handle_messages(self, data, device_type, client_socket):
         # Handle messages based on the device type
-        if device_type == "thermostat":
+        if device_type == "client":
             message = proto.device_pb2.DeviceMessage()
             message.ParseFromString(data)
 
-            print(message)
+            if message.type == proto.device_pb2.DeviceMessage.MessageType.UPDATE:
+                update_message = proto.device_pb2.DeviceMessage()
+                update_message.type = proto.device_pb2.DeviceMessage.MessageType.UPDATE
 
-        elif device_type == "airconditioner":
-            message = proto.device_pb2.ACStatus()
-            message.ParseFromString(data)
+                device_list = {key: {"type": value["type"]} for key, value in self.devices.items()}
+                print(device_list)
+                update_message.value = json.dumps(device_list)
 
-            print(message)
+                client_socket.send(update_message.SerializeToString())
+            else:
+                self.devices[message.id]["socket"].send(data)
+
+        else:
+            self.broadcast_clients(data)
 
     def send_message(self, device_id):
         # Find the dictionary entry with the matching device ID
@@ -136,6 +144,10 @@ class IoTGateway:
 
             except Exception as e:
                 print(f"Error sending message to device {device_id}: {e}")
+
+    def broadcast_clients(self, data):
+        for client_id, client in self.clients.items():
+            client["socket"].send(data)
 
     def handle_user_commands(self):
         while self.running:

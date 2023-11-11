@@ -3,6 +3,7 @@ import signal
 import threading
 import os
 import proto.device_pb2
+import json
 
 
 class Client:
@@ -11,6 +12,7 @@ class Client:
         self.port = port
         self.client_socket = None
         self.running = True  # Flag to control the main loop
+        self.devices = {}
         self.device_type = "client"
 
     def handle_shutdown(self, signum, frame):
@@ -27,14 +29,9 @@ class Client:
             print(f"Connected to {self.host}:{self.port}")
             self.send_device_type()
 
-            receive_thread = threading.Thread(target=self.handle_user_commands)
+            receive_thread = threading.Thread(target=self.receive_data)
             receive_thread.daemon = True
             receive_thread.start()
-
-            while self.running:
-                data = self.client_socket.recv(1024)
-                if not data:
-                    break
 
         except Exception as e:
             print(f"Error: {e}")
@@ -46,6 +43,25 @@ class Client:
         except Exception as e:
             print(f"Error sending device type: {e}")
 
+    def receive_data(self):
+        try:
+            while self.running:
+                data = self.client_socket.recv(1024)
+                if not data:
+                    break
+
+                gateway_message = proto.device_pb2.DeviceMessage()
+                gateway_message.ParseFromString(data)
+
+                print("received message")
+
+                if gateway_message.type == proto.device_pb2.DeviceMessage.MessageType.UPDATE:
+                    self.devices = json.loads(gateway_message.value)
+                    print(self.devices)
+
+        except Exception as e:
+            print(f"Error: {e}")
+
     def send_data(self):
         message = proto.device_pb2.StatusMessage()
         message.isOn = self.status["isOn"]
@@ -55,41 +71,44 @@ class Client:
         except Exception as e:
             print(f"Error sending status message: {e}")
 
-    def handle_user_commands(self):
-        while self.running:
-            user_input = input("Enter a command (or 'quit' to exit): ")
-            if user_input.lower() == "quit":
-                print("Closing the gateway...")
-                self.running = False  # Set the running flag to False
-                for device_id, device_info in self.devices.items():
-                    device_info["socket"].close()
-                os._exit(1)  # Exit the program
+    def request_update(self):
+        update_message = proto.device_pb2.DeviceMessage()
+        update_message.type = proto.device_pb2.DeviceMessage.MessageType.UPDATE
 
-            elif user_input.lower() == "status":
-                self.broadcast_data()
+        self.client_socket.send(update_message.SerializeToString())
 
-            elif user_input.lower() == "help":
-                # Display available commands and descriptions
-                commands = {
-                    "\nstatus": "Check the current status of the program.",
-                    "quit": "Exit the program.",
-                    "help": "Display a list of available commands.\n",
-                }
-                print("\nThese are the available commands:")
-                for command, desc in commands.items():
-                    print(f"{command}: {desc}")
+    def send_message(self, device_id):
+        # Find the dictionary entry with the matching device ID
+        if device_id in self.devices:
+            device_info = self.devices[device_id]
+            device_type = device_info["type"]
 
-            elif user_input.lower() == "update":
-                # Send a message to a specific device
-                device = input("Input the device ID: ")
-                self.send_message(device)
+            if device_type == "airconditioner":
+                temperature = input("Type in the air conditioner temperature: ")
 
-            elif user_input.lower() == "show":
-                # Show the list of connected clients
-                print(self.devices)
+                message = proto.device_pb2.DeviceMessage()
+                message.type = proto.device_pb2.DeviceMessage.MessageType.AC
+                message.value = "set_temperature=" + temperature
 
-            else:
-                print("Invalid command. Type help for all commands")
+                try:
+                    self.client_socket.send(message.SerializeToString())
+                except Exception as e:
+                    print(f"Error sending status message: {e}")
+
+            elif device_type == "lightbulb":
+                switch = input("Switch on/off the lightbulb? (1 for on, 0 for off): ")
+
+                message = proto.device_pb2.DeviceMessage()
+                message.type = proto.device_pb2.DeviceMessage.MessageType.LIGHT
+                message.value = "set_on=" + switch
+
+                try:
+                    self.client_socket.send(message.SerializeToString())
+                except Exception as e:
+                    print(f"Error sending status message: {e}")
+
+        else:
+            print("Did not find in", self.devices)
 
 
 if __name__ == "__main__":
@@ -97,13 +116,34 @@ if __name__ == "__main__":
     client.connect()
 
     while client.running:
-        user_input = input("Enter data to send to the gateway (or 'quit' to exit): ")
+        user_input = input("Enter a command (or 'quit' to exit): ")
         if user_input.lower() == "quit":
             print("Closing the client...")
             client.client_socket.close()
             break
+
         elif user_input.lower() == "status":
-            print(client.status)
-        client.send_data(user_input)
+            client.request_update()
+
+        elif user_input.lower() == "update":
+            # Send a message to a specific device
+            client.request_update()
+            device = input("Input the device ID: ")
+            client.send_message(device)
+
+        elif user_input.lower() == "help":
+            # Display available commands and descriptions
+            commands = {
+                "\nstatus": "Check the current status of the program.",
+                "quit": "Exit the program.",
+                "help": "Display a list of available commands.\n",
+            }
+            print("\nThese are the available commands:")
+            for command, desc in commands.items():
+                print(f"{command}: {desc}")
+
+        else:
+            print("Invalid command. Type help for all commands")
 
     client.running = False  # Set the running flag to False to exit the receive_data loop
+    os._exit(1)  # Exit the program
