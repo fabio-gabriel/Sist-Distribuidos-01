@@ -4,6 +4,9 @@ import threading
 import os
 import proto.device_pb2
 import json
+import tkinter as tk
+from tkinter import ttk
+import time
 
 
 class Client:
@@ -43,7 +46,7 @@ class Client:
         except Exception as e:
             print(f"Error sending device type: {e}")
 
-    def receive_data(self):
+    def receive_data(self, callback=None):
         try:
             while self.running:
                 data = self.client_socket.recv(1024)
@@ -53,11 +56,12 @@ class Client:
                 gateway_message = proto.device_pb2.DeviceMessage()
                 gateway_message.ParseFromString(data)
 
-                print("received message")
-
                 if gateway_message.type == proto.device_pb2.DeviceMessage.MessageType.UPDATE:
                     self.devices = json.loads(gateway_message.value)
                     print(self.devices)
+
+                    if callback:
+                        callback()
 
         except Exception as e:
             print(f"Error: {e}")
@@ -111,26 +115,54 @@ class Client:
             print("Did not find in", self.devices)
 
 
-if __name__ == "__main__":
-    client = Client("localhost", 8080)
-    client.connect()
+class ClientGUI(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Client GUI")
+        self.geometry("400x300")
 
-    while client.running:
-        user_input = input("Enter a command (or 'quit' to exit): ")
+        self.client = Client("localhost", 8080)
+        self.client.connect()
+
+        self.create_widgets()
+
+    def create_widgets(self):
+        # Treeview for displaying data in a table
+        self.tree = ttk.Treeview(self, columns=("ID", "Type"), show="headings")
+        self.tree.heading("ID", text="ID")
+        self.tree.heading("Type", text="Type")
+        self.tree.pack(pady=20)
+
+        # Display initial data in the table
+        self.update_table()
+
+        self.command_label = ttk.Label(self, text="Enter a command:")
+        self.command_label.pack(pady=10)
+
+        self.command_entry = ttk.Entry(self)
+        self.command_entry.pack(pady=10)
+
+        self.submit_button = ttk.Button(self, text="Submit", command=self.process_command)
+        self.submit_button.pack(pady=10)
+
+        self.quit_button = ttk.Button(self, text="Quit", command=self.quit_program)
+        self.quit_button.pack(pady=10)
+
+    def process_command(self):
+        user_input = self.command_entry.get()
         if user_input.lower() == "quit":
             print("Closing the client...")
-            client.client_socket.close()
-            break
-
+            self.client.client_socket.close()
+            self.quit_program()
         elif user_input.lower() == "status":
-            client.request_update()
-
+            self.client.request_update()
+            time.sleep(0.1)
+            self.update_table()
         elif user_input.lower() == "update":
             # Send a message to a specific device
-            client.request_update()
+            self.client.request_update()
             device = input("Input the device ID: ")
-            client.send_message(device)
-
+            self.client.send_message(device)
         elif user_input.lower() == "help":
             # Display available commands and descriptions
             commands = {
@@ -141,9 +173,26 @@ if __name__ == "__main__":
             print("\nThese are the available commands:")
             for command, desc in commands.items():
                 print(f"{command}: {desc}")
-
         else:
             print("Invalid command. Type help for all commands")
 
-    client.running = False  # Set the running flag to False to exit the receive_data loop
-    os._exit(1)  # Exit the program
+    def quit_program(self):
+        self.client.running = False
+        os._exit(1)  # Exit the program
+
+    def update_table(self):
+        print("i have been called")
+        # Clear existing data in the table
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+
+        print(self.client.devices)
+
+        # Insert data from the dictionary into the table
+        for device_id, device_info in self.client.devices.items():
+            self.tree.insert("", "end", values=(device_id, device_info["type"]))
+
+
+if __name__ == "__main__":
+    app = ClientGUI()
+    app.mainloop()
