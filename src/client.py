@@ -46,7 +46,7 @@ class Client:
         except Exception as e:
             print(f"Error sending device type: {e}")
 
-    def receive_data(self, callback=None):
+    def receive_data(self):
         try:
             while self.running:
                 data = self.client_socket.recv(1024)
@@ -60,8 +60,8 @@ class Client:
                     self.devices = json.loads(gateway_message.value)
                     print(self.devices)
 
-                    if callback:
-                        callback()
+                else:
+                    print(gateway_message)
 
         except Exception as e:
             print(f"Error: {e}")
@@ -127,10 +127,13 @@ class ClientGUI(tk.Tk):
         self.create_widgets()
 
     def create_widgets(self):
+        self.minsize(700, 500)
+
         # Treeview for displaying data in a table
-        self.tree = ttk.Treeview(self, columns=("ID", "Type"), show="headings")
+        self.tree = ttk.Treeview(self, columns=("ID", "Type", "Value"), show="headings")
         self.tree.heading("ID", text="ID")
         self.tree.heading("Type", text="Type")
+        self.tree.heading("Value", text="Value")
         self.tree.pack(pady=20)
 
         # Display initial data in the table
@@ -161,8 +164,9 @@ class ClientGUI(tk.Tk):
         elif user_input.lower() == "update":
             # Send a message to a specific device
             self.client.request_update()
-            device = input("Input the device ID: ")
-            self.client.send_message(device)
+            time.sleep(0.1)
+            self.update_table()
+            self.update_popup()
         elif user_input.lower() == "help":
             # Display available commands and descriptions
             commands = {
@@ -181,16 +185,87 @@ class ClientGUI(tk.Tk):
         os._exit(1)  # Exit the program
 
     def update_table(self):
-        print("i have been called")
         # Clear existing data in the table
         for item in self.tree.get_children():
             self.tree.delete(item)
 
-        print(self.client.devices)
-
         # Insert data from the dictionary into the table
         for device_id, device_info in self.client.devices.items():
-            self.tree.insert("", "end", values=(device_id, device_info["type"]))
+            self.tree.insert("", "end", values=(device_id, device_info["type"], device_info["value"]))
+
+    def update_popup(self):
+        self.popup = tk.Toplevel(self)
+        self.popup.title("Update a device")
+
+        self.popup.command_label = ttk.Label(self.popup, text="Enter the device ID: ")
+        self.popup.command_label.pack(pady=10)
+
+        self.popup.command_entry = ttk.Entry(self.popup)
+        self.popup.command_entry.pack(pady=10)
+
+        self.popup.submit_button = ttk.Button(self.popup, text="Submit", command=self.get_device)
+        self.popup.submit_button.pack(pady=10)
+
+    def get_device(self):
+        self.user_input = self.popup.command_entry.get()
+
+        for widget in self.popup.winfo_children():
+            widget.destroy()
+
+        if self.user_input in self.client.devices:
+            device_info = self.client.devices[self.user_input]
+            device_type = device_info["type"]
+
+            if device_type == "airconditioner":
+                self.popup.command_label = ttk.Label(self.popup, text="Enter the new temperature: ")
+                self.popup.command_label.pack(pady=10)
+
+                self.popup.command_entry = ttk.Entry(self.popup)
+                self.popup.command_entry.pack(pady=10)
+
+                self.popup.submit_button = ttk.Button(self.popup, text="Submit", command=self.create_AC_message)
+                self.popup.submit_button.pack(pady=10)
+
+            elif device_type == "lightbulb":
+                self.popup.command_label = ttk.Label(
+                    self.popup, text="Switch on/off the lightbulb? (1 for on, 0 for off): "
+                )
+                self.popup.command_label.pack(pady=10)
+
+                self.popup.command_entry = ttk.Entry(self.popup)
+                self.popup.command_entry.pack(pady=10)
+
+                self.popup.submit_button = ttk.Button(self.popup, text="Submit", command=self.create_Light_message)
+                self.popup.submit_button.pack(pady=10)
+
+        else:
+            print("Did not find in", self.devices)
+
+    def create_AC_message(self):
+        user_input = self.popup.command_entry.get()
+
+        message = proto.device_pb2.DeviceMessage()
+        message.type = proto.device_pb2.DeviceMessage.MessageType.AC
+        message.value = "set_temperature=" + str(user_input)
+        message.id = int(self.user_input)
+
+        try:
+            self.client.client_socket.send(message.SerializeToString())
+        except Exception as e:
+            print(f"Error sending status message: {e}")
+
+    def create_Light_message(self):
+        user_input = self.popup.command_entry.get()
+
+        message = proto.device_pb2.DeviceMessage()
+        message.type = proto.device_pb2.DeviceMessage.MessageType.LIGHT
+        message.value = "set_on=" + str(user_input)
+        message.id = int(self.user_input)
+
+        try:
+            self.client.client_socket.send(message.SerializeToString())
+        except Exception as e:
+            print(f"Error sending status message: {e}")
 
 
 if __name__ == "__main__":
