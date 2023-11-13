@@ -85,7 +85,7 @@ class IoTGateway:
 
                 client_socket.send(update_message.SerializeToString())
             else:
-                self.devices[message.id]["socket"].send(update_message)
+                self.devices[message.id]["socket"].send(data)
 
         else:
             update_message = proto.device_pb2.DeviceMessage()
