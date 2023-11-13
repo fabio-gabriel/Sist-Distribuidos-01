@@ -52,7 +52,7 @@ class IoTGateway:
                 self.device_id += 1  # Increment the device ID counter
 
                 # Store device information in a dictionary
-                self.devices[device_id] = {"socket": client_socket, "type": device_type}
+                self.devices[device_id] = {"socket": client_socket, "type": device_type, "value": None}
                 print(f"Assigned Device ID {device_id} to client {client_socket.getpeername()} of type {device_type}")
 
             while self.running:
@@ -69,24 +69,36 @@ class IoTGateway:
 
     def handle_messages(self, data, device_type, client_socket):
         # Handle messages based on the device type
-        if device_type == "client":
-            message = proto.device_pb2.DeviceMessage()
-            message.ParseFromString(data)
+        message = proto.device_pb2.DeviceMessage()
+        message.ParseFromString(data)
 
+        if device_type == "client":
             if message.type == proto.device_pb2.DeviceMessage.MessageType.UPDATE:
                 update_message = proto.device_pb2.DeviceMessage()
                 update_message.type = proto.device_pb2.DeviceMessage.MessageType.UPDATE
 
-                device_list = {key: {"type": value["type"]} for key, value in self.devices.items()}
+                device_list = {
+                    key: {"type": value["type"], "value": value["value"]} for key, value in self.devices.items()
+                }
                 print(device_list)
                 update_message.value = json.dumps(device_list)
 
                 client_socket.send(update_message.SerializeToString())
             else:
-                self.devices[message.id]["socket"].send(data)
+                self.devices[message.id]["socket"].send(update_message)
 
         else:
-            self.broadcast_clients(data)
+            update_message = proto.device_pb2.DeviceMessage()
+            match self.devices[message.id]["type"]:
+                case "airconditioner":
+                    update_message.type = proto.device_pb2.DeviceMessage.MessageType.AC
+                case "lightbulb":
+                    update_message.type = proto.device_pb2.DeviceMessage.MessageType.LIGHT
+                case "thermostat":
+                    update_message.type = proto.device_pb2.DeviceMessage.MessageType.THERMOSTAT
+
+            update_message.value = message.value
+            self.broadcast_clients(data.SerializeToString())
 
     def send_message(self, device_id):
         # Find the dictionary entry with the matching device ID
