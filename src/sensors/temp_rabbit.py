@@ -48,8 +48,9 @@ if __name__ == "__main__":
     try:
         while True:
             temperature = random.uniform(18.0, 30.0)
-            rabbitmq_publisher.send_temperature_data(temperature)
-            print(f"{temperature}")
+            temperature_format = "{:.2f}".format(temperature)
+            rabbitmq_publisher.send_temperature_data(temperature_format)
+            print(f"{temperature_format + "°C"}")
             time.sleep(5)
     except KeyboardInterrupt:
         print("Temperature Sensor: Closing...")

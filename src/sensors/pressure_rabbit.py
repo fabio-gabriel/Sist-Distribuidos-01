@@ -48,7 +48,9 @@ if __name__ == "__main__":
     try:
         while True:
             pressure = random.uniform(980.0, 1050.0)
-            rabbitmq_pressure_publisher.send_pressure_data(pressure)
+            pressure_format = "{:.2f}".format(pressure)
+            rabbitmq_pressure_publisher.send_pressure_data(pressure_format)
+
             print(f"Pressure: {pressure}")
             time.sleep(5)
     except KeyboardInterrupt:
