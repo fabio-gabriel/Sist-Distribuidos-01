@@ -80,7 +80,7 @@ class IoTGateway:
                 device_list = {
                     key: {"type": value["type"], "value": value["value"]} for key, value in self.devices.items()
                 }
-                print(device_list)
+                print("sent device list", device_list)
                 update_message.value = json.dumps(device_list)
 
                 client_socket.send(update_message.SerializeToString())
@@ -88,6 +88,9 @@ class IoTGateway:
                 self.devices[message.id]["socket"].send(data)
 
         else:
+            self.devices[message.id]["value"] = message.value
+            print("updated devices", self.devices)
+
             update_message = proto.device_pb2.DeviceMessage()
             match self.devices[message.id]["type"]:
                 case "airconditioner":
@@ -98,7 +101,8 @@ class IoTGateway:
                     update_message.type = proto.device_pb2.DeviceMessage.MessageType.THERMOSTAT
 
             update_message.value = message.value
-            self.broadcast_clients(data.SerializeToString())
+            update_message.id = message.id
+            self.broadcast_clients(update_message.SerializeToString())
 
     def send_message(self, device_id):
         # Find the dictionary entry with the matching device ID

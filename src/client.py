@@ -56,12 +56,13 @@ class Client:
                 gateway_message = proto.device_pb2.DeviceMessage()
                 gateway_message.ParseFromString(data)
 
-                if gateway_message.type == proto.device_pb2.DeviceMessage.MessageType.UPDATE:
+                if gateway_message.type == 3:
                     self.devices = json.loads(gateway_message.value)
                     print(self.devices)
 
                 else:
-                    print(gateway_message)
+                    self.devices[str(gateway_message.id)]["value"] = int(gateway_message.value)
+                    print("devices list", self.devices)
 
         except Exception as e:
             print(f"Error: {e}")
@@ -251,8 +252,12 @@ class ClientGUI(tk.Tk):
 
         try:
             self.client.client_socket.send(message.SerializeToString())
+            self.client.devices[self.user_input]["value"] = user_input
         except Exception as e:
             print(f"Error sending status message: {e}")
+
+        self.update_table()
+        self.popup.destroy()
 
     def create_Light_message(self):
         user_input = self.popup.command_entry.get()
@@ -266,6 +271,9 @@ class ClientGUI(tk.Tk):
             self.client.client_socket.send(message.SerializeToString())
         except Exception as e:
             print(f"Error sending status message: {e}")
+
+        self.update_table()
+        self.popup.destroy()
 
 
 if __name__ == "__main__":

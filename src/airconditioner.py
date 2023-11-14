@@ -67,6 +67,11 @@ class IoTDevice:
                     self.status["temperature"] = value
                     print("The device has been updated: ", self.status["temperature"])
 
+                    message = proto.device_pb2.DeviceMessage()
+                    message.type = proto.device_pb2.DeviceMessage.MessageType.AC
+                    message.value = str(value)
+                    self.client_socket.send(message.SerializeToString())
+
                 elif command == "get_temperature":
                     self.send_data()
                     print("Data has been sent: ", self.status["temperature"])
