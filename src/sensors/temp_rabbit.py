@@ -4,6 +4,7 @@ import pika
 import json
 from typing import Dict
 
+
 class RabbitmqPublisher:
     def __init__(self) -> None:
         self.__host = "localhost"
@@ -18,13 +19,10 @@ class RabbitmqPublisher:
         connection_parameters = pika.ConnectionParameters(
             host=self.__host,
             port=self.__port,
-            credentials=pika.PlainCredentials(
-                username=self.__username,
-                password=self.__password
-            )
+            credentials=pika.PlainCredentials(username=self.__username, password=self.__password),
         )
         channel = pika.BlockingConnection(connection_parameters).channel()
-        channel.exchange_declare(exchange=self.__exchange, exchange_type='fanout')
+        channel.exchange_declare(exchange=self.__exchange, exchange_type="fanout")
         return channel
 
     def send_temperature_data(self, temperature: float):
@@ -37,10 +35,9 @@ class RabbitmqPublisher:
             exchange=self.__exchange,
             routing_key=self.__routing_key,
             body=message,
-            properties=pika.BasicProperties(
-                delivery_mode=2
-            )
+            properties=pika.BasicProperties(delivery_mode=2),
         )
+
 
 if __name__ == "__main__":
     rabbitmq_publisher = RabbitmqPublisher()
@@ -50,7 +47,7 @@ if __name__ == "__main__":
             temperature = random.uniform(18.0, 30.0)
             temperature_format = "{:.2f}".format(temperature)
             rabbitmq_publisher.send_temperature_data(temperature_format)
-            print(f"{temperature_format + "°C"}")
+            print(f"{temperature_format} °C")
             time.sleep(5)
     except KeyboardInterrupt:
         print("Temperature Sensor: Closing...")
