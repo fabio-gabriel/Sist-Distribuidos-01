@@ -1,10 +1,11 @@
-import socket
 import signal
-import threading
 import proto.device_pb2
+import proto.device_pb2_grpc
+import grpc
+from concurrent import futures
 
 
-class IoTDevice:
+class IoTDevice(proto.device_pb2_grpc.MessageBrokerServicer):
     def __init__(self, host, port):
         self.host = host
         self.port = port
@@ -12,6 +13,9 @@ class IoTDevice:
         self.running = True  # Flag to control the main loop
         self.device_type = "airconditioner"
         self.status = {"temperature": 21}
+
+        self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+        proto.device_pb2_grpc.add_MessageBrokerServicer_to_server(self, self.server)
 
     def handle_shutdown(self, signum, frame):
         print("Closing the client...")
@@ -21,64 +25,23 @@ class IoTDevice:
 
     def connect(self):
         signal.signal(signal.SIGBREAK, self.handle_shutdown)
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            self.client_socket.connect((self.host, self.port))
-            print(f"Connected to {self.host}:{self.port}")
-            self.send_device_type()
-
-            receive_thread = threading.Thread(target=self.receive_data)
-            receive_thread.daemon = True
-            receive_thread.start()
+            self.server.add_insecure_port("localhost:50051")
+            print("here we go")
+            self.server.start()
+            self.server.wait_for_termination()
 
         except Exception as e:
             print(f"Error: {e}")
 
-    def send_device_type(self):
-        try:
-            # Send the device type as part of the handshake
-            self.client_socket.send(self.device_type.encode())
-        except Exception as e:
-            print(f"Error sending device type: {e}")
-
-    def send_data(self):
-        message = proto.device_pb2.DeviceMessage()
-        message.type = proto.device_pb2.DeviceMessage.MessageType.AC
-        message.value = self.status["temperature"]
-
-        try:
-            self.client_socket.send(message.SerializeToString())
-        except Exception as e:
-            print(f"Error sending status message: {e}")
-
-    def receive_data(self):
-        try:
-            while self.running:
-                data = self.client_socket.recv(1024)
-                if not data:
-                    break
-
-                air_conditioner_message = proto.device_pb2.DeviceMessage()
-                air_conditioner_message.ParseFromString(data)
-
-                command, value = air_conditioner_message.value.split("=")
-
-                if command == "set_temperature":
-                    self.status["temperature"] = value
-                    print("The device has been updated: ", self.status["temperature"])
-
-                    message = proto.device_pb2.DeviceMessage()
-                    message.type = proto.device_pb2.DeviceMessage.MessageType.AC
-                    message.value = str(value)
-                    self.client_socket.send(message.SerializeToString())
-
-                elif command == "get_temperature":
-                    self.send_data()
-                    print("Data has been sent: ", self.status["temperature"])
-
-            self.client_socket.close()
-        except Exception as e:
-            print(f"Error: {e}")
+    def SendDeviceMessage(self, request, context):
+        print("TA AQUI O REQUEST CARAI", request, context)
+        if request.type == proto.device_pb2.DeviceMessage.MessageType.UPDATE:
+            return proto.device_pb2.SendDeviceMessage(value=self.device_type)
+        else:
+            command, value = request.value.split("=")
+            self.status = int(value)
+            return super().SendDeviceMessage(value=self.status)
 
 
 if __name__ == "__main__":

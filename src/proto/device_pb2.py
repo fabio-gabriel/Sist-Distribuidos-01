@@ -13,15 +13,19 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0c\x64\x65vice.proto\"\x92\x01\n\rDeviceMessage\x12(\n\x04type\x18\x01 \x01(\x0e\x32\x1a.DeviceMessage.MessageType\x12\r\n\x05value\x18\x02 \x01(\t\x12\n\n\x02id\x18\x03 \x01(\x03\"<\n\x0bMessageType\x12\x06\n\x02\x41\x43\x10\x00\x12\t\n\x05LIGHT\x10\x01\x12\x0e\n\nTHERMOSTAT\x10\x02\x12\n\n\x06UPDATE\x10\x03\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0c\x64\x65vice.proto\"\x07\n\x05\x45mpty\"\x92\x01\n\rDeviceMessage\x12(\n\x04type\x18\x01 \x01(\x0e\x32\x1a.DeviceMessage.MessageType\x12\r\n\x05value\x18\x02 \x01(\t\x12\n\n\x02id\x18\x03 \x01(\x03\"<\n\x0bMessageType\x12\x06\n\x02\x41\x43\x10\x00\x12\t\n\x05LIGHT\x10\x01\x12\x0e\n\nTHERMOSTAT\x10\x02\x12\n\n\x06UPDATE\x10\x03\x32\x44\n\rMessageBroker\x12\x33\n\x11SendDeviceMessage\x12\x0e.DeviceMessage\x1a\x0e.DeviceMessageb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'device_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
-  _globals['_DEVICEMESSAGE']._serialized_start=17
-  _globals['_DEVICEMESSAGE']._serialized_end=163
-  _globals['_DEVICEMESSAGE_MESSAGETYPE']._serialized_start=103
-  _globals['_DEVICEMESSAGE_MESSAGETYPE']._serialized_end=163
+  _globals['_EMPTY']._serialized_start=16
+  _globals['_EMPTY']._serialized_end=23
+  _globals['_DEVICEMESSAGE']._serialized_start=26
+  _globals['_DEVICEMESSAGE']._serialized_end=172
+  _globals['_DEVICEMESSAGE_MESSAGETYPE']._serialized_start=112
+  _globals['_DEVICEMESSAGE_MESSAGETYPE']._serialized_end=172
+  _globals['_MESSAGEBROKER']._serialized_start=174
+  _globals['_MESSAGEBROKER']._serialized_end=242
 # @@protoc_insertion_point(module_scope)

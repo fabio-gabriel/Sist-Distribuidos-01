@@ -1,9 +1,13 @@
 import socket
 import threading
 import os
+import proto.device_pb2_grpc
 import proto.device_pb2
 import json
 import pika
+import grpc
+from concurrent import futures
+
 
 class RabbitmqConsumer:
     def __init__(self, callback) -> None:
@@ -20,17 +24,11 @@ class RabbitmqConsumer:
             connection_parameters = pika.ConnectionParameters(
                 host=self.__host,
                 port=self.__port,
-                credentials=pika.PlainCredentials(
-                    username=self.__username,
-                    password=self.__password
-                )
+                credentials=pika.PlainCredentials(username=self.__username, password=self.__password),
             )
 
             channel = pika.BlockingConnection(connection_parameters).channel()
-            channel.queue_declare(
-                queue=self.__queue,
-                durable=True
-            )
+            channel.queue_declare(queue=self.__queue, durable=True)
 
             return channel
         except pika.exceptions.AMQPError as amqp_error:
@@ -38,7 +36,7 @@ class RabbitmqConsumer:
             raise
 
     def start(self):
-        print(f'Listening to RabbitMQ on Port 5672')
+        print(f"Listening to RabbitMQ on Port 5672")
         try:
             self.__channel.start_consuming()
         except KeyboardInterrupt:
@@ -47,7 +45,7 @@ class RabbitmqConsumer:
             print(f"Error starting RabbitMQ consumer: {amqp_error}")
 
 
-class IoTGateway:
+class IoTGateway(proto.device_pb2_grpc.MessageBrokerServicer):
     def __init__(self, host, port):
         self.host = host
         self.port = port
@@ -58,6 +56,12 @@ class IoTGateway:
         self.running = True  # Flag to control main loop
         self.rabbitmq_exchanges = set()
         self.input_threads = []
+
+        channel = grpc.insecure_channel("localhost:50051")
+        self.stub1 = proto.device_pb2_grpc.MessageBrokerStub(channel)
+
+        channel2 = grpc.insecure_channel("[::]:50052")
+        self.stub2 = proto.device_pb2_grpc.MessageBrokerStub(channel2)
 
         # Initialize RabbitMQ consumer
         self.rabbitmq_consumer = RabbitmqConsumer(self.handle_rabbitmq_message)
@@ -116,7 +120,7 @@ class IoTGateway:
             client_socket.close()
         except Exception as e:
             print(f"Error handling client: {e}")
-    
+
     def handle_rabbitmq_message(self, ch, method, properties, body):
         try:
             print(f"\nReceived RabbitMQ message: {body.decode()}")
@@ -134,15 +138,21 @@ class IoTGateway:
                 update_message = proto.device_pb2.DeviceMessage()
                 update_message.type = proto.device_pb2.DeviceMessage.MessageType.UPDATE
 
-                device_list = {
-                    key: {"type": value["type"], "value": value["value"]} for key, value in self.devices.items()
-                }
-                print("sent device list", device_list)
-                update_message.value = json.dumps(device_list)
+                response = self.stub1.SendDeviceMessage(
+                    proto.device_pb2.DeviceMessage(type=proto.device_pb2.DeviceMessage.MessageType.UPDATE)
+                )
 
-                client_socket.send(update_message.SerializeToString())
+                self.device_id += 1
+                self.devices[self.device_id] = {"type": message.type, "value": None}
+
+                print("sent device list", self.devices)
+                update_message.value = json.dumps(self.devices)
+
+                client_socket.send(update_message.SerializeToString())  # Returns discovered devices to client
             else:
-                self.devices[message.id]["socket"].send(data)
+                self.stub1.SendDeviceMessage(proto.device_pb2.DeviceMessage(value=message.value))
+                self.devices[message.id]["value"] = message.value  # Where value is updated from none
+                print("Devices updated", self.devices)
 
         else:
             self.devices[message.id]["value"] = message.value
@@ -236,19 +246,18 @@ class IoTGateway:
                 self.broadcast_data()
 
             elif user_input.lower() == "help":
-                    commands = {
-                        "\nstatus": "Check the current status of the program.",
-                        "quit": "Exit the program.",
-                        "help": "Display a list of available commands.",
-                        "add_exchange": "Add a RabbitMQ exchange.",
-                        "remove_exchange": "Remove a RabbitMQ exchange.",
-                        "list_exchanges": "List RabbitMQ exchanges.",
-                        "select_sensors": "Select sensors via RabbitMQ.",
-                    }
-                    print("\nThese are the available commands:")
-                    for command, desc in commands.items():
-                        print(f"{command}: {desc}")
-
+                commands = {
+                    "\nstatus": "Check the current status of the program.",
+                    "quit": "Exit the program.",
+                    "help": "Display a list of available commands.",
+                    "add_exchange": "Add a RabbitMQ exchange.",
+                    "remove_exchange": "Remove a RabbitMQ exchange.",
+                    "list_exchanges": "List RabbitMQ exchanges.",
+                    "select_sensors": "Select sensors via RabbitMQ.",
+                }
+                print("\nThese are the available commands:")
+                for command, desc in commands.items():
+                    print(f"{command}: {desc}")
 
             elif user_input.lower() == "update":
                 # Send a message to a specific device
@@ -259,30 +268,29 @@ class IoTGateway:
                 # Show the list of connected clients
                 print(self.devices)
             elif user_input.lower() == "add_exchange":
-                    exchange_name = input("Enter the RabbitMQ exchange name to add: ")
-                    self.rabbitmq_exchanges.add(exchange_name)
-                    print(f"Added RabbitMQ exchange: {exchange_name}")
+                exchange_name = input("Enter the RabbitMQ exchange name to add: ")
+                self.rabbitmq_exchanges.add(exchange_name)
+                print(f"Added RabbitMQ exchange: {exchange_name}")
 
             elif user_input.lower() == "remove_exchange":
-                    exchange_name = input("Enter the RabbitMQ exchange name to remove: ")
-                    if exchange_name in self.rabbitmq_exchanges:
-                        self.rabbitmq_exchanges.remove(exchange_name)
-                        print(f"Removed RabbitMQ exchange: {exchange_name}")
-                    else:
-                        print(f"Exchange not found: {exchange_name}")
+                exchange_name = input("Enter the RabbitMQ exchange name to remove: ")
+                if exchange_name in self.rabbitmq_exchanges:
+                    self.rabbitmq_exchanges.remove(exchange_name)
+                    print(f"Removed RabbitMQ exchange: {exchange_name}")
+                else:
+                    print(f"Exchange not found: {exchange_name}")
 
             elif user_input.lower() == "list_exchanges":
-                    print("\nRabbitMQ Exchanges:")
-                    for exchange in self.rabbitmq_exchanges:
-                        print(exchange)
+                print("\nRabbitMQ Exchanges:")
+                for exchange in self.rabbitmq_exchanges:
+                    print(exchange)
 
             elif user_input.lower() == "select_sensors":
-                    self.select_sensors_via_rabbitmq()
+                self.select_sensors_via_rabbitmq()
 
             else:
                 print("Invalid command. Type help for all commands")
 
-                
     def select_sensors_via_rabbitmq(self):
         try:
             if not self.rabbitmq_exchanges:
@@ -320,11 +328,11 @@ class IoTGateway:
                             print(f"Error stopping RabbitMQ consumer: {e}")
                         break
 
-            connection = pika.BlockingConnection(pika.ConnectionParameters('localhost', 5672))
+            connection = pika.BlockingConnection(pika.ConnectionParameters("localhost", 5672))
             channel = connection.channel()
-            channel.exchange_declare(exchange=selected_exchange, exchange_type='fanout')
+            channel.exchange_declare(exchange=selected_exchange, exchange_type="fanout")
 
-            result = channel.queue_declare(queue='', exclusive=True)
+            result = channel.queue_declare(queue="", exclusive=True)
             queue_name = result.method.queue
             channel.queue_bind(exchange=selected_exchange, queue=queue_name)
             channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
@@ -349,6 +357,7 @@ class IoTGateway:
 
         except Exception as e:
             print(f"Error selecting sensors via RabbitMQ: {e}")
+
 
 if __name__ == "__main__":
     gateway = IoTGateway("localhost", 8080)
