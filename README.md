@@ -16,6 +16,13 @@ Além disso, o Home Assistant atua como um servidor para uma aplicação cliente
 - gRPC
 - Python
 
+## gRPC
+
+O gRPC é um framework de comunicação remota que utiliza o protocolo HTTP/2 para realizar chamadas de procedimento remoto (RPC - Remote Procedure Call) de maneira eficiente entre clientes e servidores. É usado neste projeto para facilitar a comunicação entre os diferentes componentes do ambiente inteligente.
+
+### Atuadores (Funcionamento)
+Para controlar um atuador de forma eficaz utilizamos uma abordagem prática que consiste em configurar os atuadores para funcionarem como servidores, utilizando o Home Assistant como um intermediário para gerenciar seus estados. O gRPC desempenha um papel significativo nesse cenário ao facilitar a comunicação como um middleware confiável, garantindo uma troca de dados eficiente e segura entre os dispositivos.
+
 ## Rabbitmq 
 
 O RabbitMQ é um software de mensageria open-source que implementa o protocolo Advanced Message Queuing Protocol (AMQP). Ele é utilizado para enviar e receber mensagens entre processos, sistemas e aplicações distribuídas. O RabbitMQ é altamente escalável e pode ser utilizado em diversas aplicações, desde sistemas simples até sistemas complexos e críticos.
